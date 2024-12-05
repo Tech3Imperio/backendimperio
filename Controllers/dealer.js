@@ -92,6 +92,11 @@
 const Dealer = require("../Models/dealers");
 const nodemailer = require("nodemailer");
 require("dotenv").config();
+const twilio = require("twilio");
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+
+const client = twilio(accountSid, authToken);
 
 // Configure Nodemailer transporter
 const transporter = nodemailer.createTransport({
@@ -258,6 +263,20 @@ const loginDealers = async (req, res) => {
   try {
     const { phone, password } = req.body;
 
+    const sendSms = async (body) => {
+      let msgOptions = {
+        from: process.env.TWILIO_AUTH_PHONE,
+        to: `+91${phone}`,
+        body,
+      };
+      try {
+        const message = await client.messages.create(msgOptions);
+        console.log(message);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
     // Check if dealer exists by email
     const dealerExists = await Dealer.findOne({ phone });
     if (!dealerExists) {
@@ -276,6 +295,7 @@ const loginDealers = async (req, res) => {
     const dealerCredential = await dealerExists.CheckPassword(password);
 
     if (dealerCredential) {
+      sendSms(`Welcome To Imperio`);
       return res.status(200).json({
         msg: "Dealer logged in successfully",
         token: await dealerExists.generateToken(),
