@@ -80,7 +80,7 @@ const enquiryformsubmission = async (req, res) => {
 
     // Send email to admin with the inquiry details
     await sendEmail(
-      "tech3@imperiorailing.com", // Admin's email
+      "sales@imperiorailing.com", // Admin's email
       "New User Inquiry",
       htmlContent
     );
