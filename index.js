@@ -2,6 +2,7 @@ const express = require("express");
 const errorhandeler = require("./Middleware/errorHandeler");
 const userRouter = require("./Routes/user");
 const dealerRouter = require("./Routes/dealer");
+const enquiryRouter = require("./Routes/contact");
 const Dbconnector = require("./DatabaseConnection/user");
 const logHistory = require("./Middleware/user");
 const bodyParser = require("body-parser");
@@ -45,6 +46,7 @@ app.use(
 
 app.use("/", userRouter);
 app.use("/product", dealerRouter);
+app.use("/", enquiryRouter);
 
 // Test route
 app.get("/test", (req, res) => {
