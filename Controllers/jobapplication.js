@@ -127,86 +127,60 @@
 //   });
 // };
 
-const cloudinary = require("cloudinary").v2; // Import Cloudinary
+const { S3, PutObjectCommand } = require("@aws-sdk/client-s3"); // Import S3 client and PutObjectCommand from AWS SDK v3
 const multer = require("multer");
-const path = require("path");
+const JobApplication = require("../models/jobapplication");
 const nodemailer = require("nodemailer");
-const JobApplication = require("../Models/jobapplication");
-const { Readable } = require("stream"); // Used for streaming the file to Cloudinary
 
-// Configure Cloudinary using environment variables
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+// Set up AWS S3 with SDK v3
+const s3 = new S3({
+  region: process.env.AWS_REGION, // AWS Region from .env
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID, // AWS Access Key from .env
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY, // AWS Secret Access Key from .env
+  },
 });
 
-// Set up Multer to use memory storage (store file in memory)
-const storage = multer.memoryStorage(); // Store files in memory (RAM)
-
+// Set up Multer for file upload (in memory storage)
+const storage = multer.memoryStorage();
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // Max file size 5MB
-}).single("resume"); // "resume" should match the key in the form data for file upload
+  limits: { fileSize: 5 * 1024 * 1024 }, // Max file size: 5MB
+}).single("resume");
 
-// Helper function to upload the resume file to Cloudinary
-const uploadResumeToCloudinary = async (fileBuffer, fileName) => {
+// Helper function to upload resume to S3
+const uploadResumeToS3 = async (fileBuffer, fileName) => {
+  const params = {
+    Bucket: process.env.AWS_BUCKET_NAME, // Your S3 Bucket name from .env
+    Key: `resumes/${fileName}`, // Use backticks for template literals
+    Body: fileBuffer,
+    ContentType: "application/pdf", // Assuming the file is a PDF
+  };
+
   try {
-    // Upload the file directly from memory to Cloudinary
-    const result = await new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          resource_type: "raw", // PDF files are raw files (not images)
-          folder: "resumes", // Store file in the "resumes" folder
-          public_id: fileName, // You can use the file name or any custom naming scheme
-        },
-        (error, result) => {
-          if (error) reject(error);
-          resolve(result);
-        }
-      );
-
-      // Pipe the file buffer to Cloudinary
-      const stream = new Readable();
-      stream.push(fileBuffer);
-      stream.push(null); // End the stream
-      stream.pipe(uploadStream);
-    });
-
-    return result.secure_url; // Return the secure URL of the uploaded file
+    const result = await s3.send(new PutObjectCommand(params)); // Use PutObjectCommand instead of upload
+    return `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${params.Key}`;
   } catch (error) {
-    console.error("Error uploading to Cloudinary:", error);
-    throw new Error("Error uploading file to Cloudinary");
+    console.error("Error uploading file to S3:", error); // Log the full error
+    throw new Error("Error uploading file to S3");
   }
 };
 
-// Controller function to handle job application form submission
+// Controller to handle job application submission
 exports.submitApplication = (req, res) => {
-  // Handle file upload via Multer
   upload(req, res, async (err) => {
-    if (err instanceof multer.MulterError) {
-      console.error("Multer error:", err);
-      return res.status(400).json({
-        status: "error",
-        message: `Error uploading file: ${err.message}`,
-      });
-    } else if (err) {
-      console.error("Error uploading file:", err);
-      return res.status(500).json({
-        status: "error",
-        message: "An unexpected error occurred while uploading the file.",
-      });
+    if (err) {
+      console.error("Multer error:", err.message); // Log multer error
+      return res.status(400).json({ status: "error", message: err.message });
     }
 
-    // Check if a file was uploaded
     if (!req.file) {
-      return res.status(400).json({
-        status: "error",
-        message: "No resume uploaded",
-      });
+      console.error("No file uploaded"); // Log missing file error
+      return res
+        .status(400)
+        .json({ status: "error", message: "No file uploaded" });
     }
 
-    // Extract form data from the request body
     const {
       name,
       surname,
@@ -225,13 +199,13 @@ exports.submitApplication = (req, res) => {
     } = req.body;
 
     try {
-      // Upload the resume file to Cloudinary and get the secure URL
-      const resumeUrl = await uploadResumeToCloudinary(
+      // Upload resume to S3 and get the URL
+      const resumeUrl = await uploadResumeToS3(
         req.file.buffer,
         req.file.originalname
       );
 
-      // Create a new job application document in the database
+      // Create a new job application in MongoDB
       const newApplication = new JobApplication({
         name,
         surname,
@@ -247,40 +221,42 @@ exports.submitApplication = (req, res) => {
         coverLetter,
         position,
         jobType,
-        resume: resumeUrl, // Save the Cloudinary URL of the resume
+        resume: resumeUrl, // URL of the uploaded resume
       });
 
-      // Save the application to MongoDB
+      console.log("Saving application data:", newApplication); // Log the application data
+
       await newApplication.save();
 
       // Set up email transporter (for notifications)
       const transporter = nodemailer.createTransport({
         service: "gmail",
         auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS,
+          user: process.env.EMAIL_USER, // Your email from .env
+          pass: process.env.EMAIL_PASS, // Your email password from .env
         },
       });
 
-      // Define the email content
+      // Send email notification
       const mailOptions = {
         from: process.env.EMAIL_USER,
-        to: "tech3@imperiorailing.com", // Recipient email address
+        to: "tech3@imperiorailing.com", // Your recipient email address
         subject: `New Job Application for ${position} - ${jobType}`,
         text: `
-          A new job application has been received for the ${position} position. The details are as follows:
+          A new job application has been received for the ${position} position.
           
           Name: ${name} ${surname}
           Email: ${email}
           Position: ${position}
-          Job Type: ${jobType}
-          
-          You can view the resume here: ${resumeUrl}
+          Resume URL: ${resumeUrl}
         `,
       };
 
-      // Send the email notification
-      await transporter.sendMail(mailOptions);
+      try {
+        await transporter.sendMail(mailOptions);
+      } catch (emailError) {
+        console.error("Error sending email:", emailError); // Log email sending error
+      }
 
       // Respond with success
       res.status(200).json({
@@ -288,11 +264,13 @@ exports.submitApplication = (req, res) => {
         message: "Job application submitted successfully.",
       });
     } catch (error) {
-      console.error("Error processing application:", error);
-      res.status(500).json({
-        status: "error",
-        message: "Server error occurred while submitting job application.",
-      });
+      console.error("Error during application submission:", error); // Log general error
+      res
+        .status(500)
+        .json({
+          status: "error",
+          message: error.message || "An error occurred",
+        });
     }
   });
 };
