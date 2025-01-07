@@ -240,7 +240,7 @@ exports.submitApplication = (req, res) => {
       // Send email notification
       const mailOptions = {
         from: process.env.EMAIL_USER,
-        to: "tech3@imperiorailing.com", // Your recipient email address
+        to: "tech3@imperiorailing.com,hr@imperiorailing.com", // Your recipient email address
         subject: `New Job Application for ${position} - ${jobType}`,
         text: `
           A new job application has been received for the ${position} position.
