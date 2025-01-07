@@ -129,7 +129,7 @@
 
 const { S3, PutObjectCommand } = require("@aws-sdk/client-s3"); // Import S3 client and PutObjectCommand from AWS SDK v3
 const multer = require("multer");
-const JobApplication = require("../models/jobapplication");
+const JobApplication = require("../Models/apllicationjob");
 const nodemailer = require("nodemailer");
 
 // Set up AWS S3 with SDK v3
