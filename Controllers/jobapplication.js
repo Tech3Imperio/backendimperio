@@ -265,12 +265,10 @@ exports.submitApplication = (req, res) => {
       });
     } catch (error) {
       console.error("Error during application submission:", error); // Log general error
-      res
-        .status(500)
-        .json({
-          status: "error",
-          message: error.message || "An error occurred",
-        });
+      res.status(500).json({
+        status: "error",
+        message: error.message || "An error occurred",
+      });
     }
   });
 };
