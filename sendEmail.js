@@ -10,7 +10,6 @@ const emailPass = process.env.EMAIL_PASS;
 const recipientEmails = [
   "tech3@imperiorailing.com",
   "tech1@imperiorailing.com",
-  "hr@imperiorailing.com",
 ];
 
 // Join the recipient emails into a comma-separated string
