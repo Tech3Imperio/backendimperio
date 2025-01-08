@@ -2,7 +2,7 @@ name: Export MongoDB Data to CSV
 
 on:
   schedule:
-    - cron: "15 12 * * *" # This will run at 12:15 PM UTC every day
+    - cron: "0 13 * * *" # This will run at 1:00 PM UTC every day
   workflow_dispatch: # Manual trigger option
 
 jobs:
@@ -30,14 +30,14 @@ jobs:
         run: |
           npm install
 
-      - name: Run the script
+      - name: Run the script to export MongoDB data to CSV
         run: |
           node exportToCSV.js
 
       - name: Send CSV to HR
         run: |
           echo "Sending CSV to HR..."
-          # Add your code for sending email, e.g., using nodemailer
+          node sendEmail.js
 
       - name: Commit and push the CSV file
         run: |
