@@ -2,7 +2,7 @@ name: Export MongoDB Data to CSV
 
 on:
   schedule:
-    - cron: "0 9 * * *" # This will run at 9:00 AM UTC every day
+    - cron: "5 9 * * *" # This will run at 9:05 AM UTC every day
   workflow_dispatch: # Manual trigger option
 
 jobs:
