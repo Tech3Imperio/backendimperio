@@ -1,12 +1,24 @@
 const nodemailer = require("nodemailer");
 const path = require("path");
-const fs = require("fs");
 
 // Environment variables for email and SMTP credentials
 const emailUser = process.env.EMAIL_USER;
 const emailPass = process.env.EMAIL_PASS;
-const recipientEmail = "tech3@imperiorailing.com"; // Replace with HR's email address
-const subject = "MongoDB Export CSV File";
+
+// List of recipient email addresses
+const recipientEmails = [
+  "tech3@imperiorailing.com",
+  "tech1@imperiorailing.com",
+  "hr@imperiorailing.com",
+];
+
+// Join the recipient emails into a comma-separated string
+const recipients = recipientEmails.join(",");
+
+const subject = "MongoDB Export CSV Files";
+
+// Get the list of CSV file paths passed as arguments
+const files = process.argv.slice(2); // All files passed as arguments
 
 // Set up Nodemailer transporter
 const transporter = nodemailer.createTransport({
@@ -17,18 +29,19 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// Prepare attachments from passed file paths
+const attachments = files.map((file) => ({
+  filename: path.basename(file),
+  path: path.resolve(__dirname, file),
+}));
+
 // Email options
 const mailOptions = {
   from: emailUser,
-  to: recipientEmail,
+  to: recipients, // Multiple recipients
   subject: subject,
   text: "Please find attached the exported MongoDB data in CSV format.",
-  attachments: [
-    {
-      filename: "output.csv",
-      path: path.resolve(__dirname, "output.csv"),
-    },
-  ],
+  attachments: attachments, // Attach the files dynamically
 };
 
 // Send email

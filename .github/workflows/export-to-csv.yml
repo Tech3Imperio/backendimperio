@@ -1,8 +1,65 @@
+# name: Export MongoDB Data to CSV
+
+# on:
+#   schedule:
+#     - cron: "30 3 * * *" # This will run at 3:30 AM UTC (9:00 AM IST) every day
+#   workflow_dispatch: # Manual trigger option
+
+# jobs:
+#   export-to-csv:
+#     runs-on: ubuntu-latest
+
+#     env:
+#       MONGODB_URI: ${{ secrets.MONGODB_URI }}
+#       DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
+#       COLLECTION_NAME: ${{ secrets.COLLECTION_NAME }}
+#       EMAIL_USER: ${{ secrets.EMAIL_USER }}
+#       EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+#       SECRET_PASS_KEY: ${{ secrets.SECRET_PASS_KEY }}
+
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v2
+
+#       - name: Set up Node.js
+#         uses: actions/setup-node@v2
+#         with:
+#           node-version: "16"
+
+#       - name: Install dependencies
+#         run: |
+#           npm install
+
+#       - name: Run the script to export MongoDB data to CSV
+#         run: |
+#           node exportToCSV.js
+
+#       - name: Check if CSV file exists
+#         run: |
+#           ls -l
+#           cat output.csv
+
+#       - name: Send CSV to HR
+#         run: |
+#           echo "Sending CSV to HR..."
+#           node sendEmail.js
+
+#       - name: Commit and push the CSV file
+#         run: |
+#           git config --global user.name "GitHub Actions"
+#           git config --global user.email "actions@github.com"
+
+#           # Check if there are any changes to commit
+#           git diff --exit-code || (
+#             git add output.csv
+#             git commit -m "Auto-update CSV file"
+#             git push
+#           )
 name: Export MongoDB Data to CSV
 
 on:
   schedule:
-    - cron: "5 9 * * *" # This will run at 9:05 AM UTC every day
+    - cron: "30 3 * * *" # This will run at 3:30 AM UTC (9:00 AM IST) every day
   workflow_dispatch: # Manual trigger option
 
 jobs:
@@ -12,10 +69,8 @@ jobs:
     env:
       MONGODB_URI: ${{ secrets.MONGODB_URI }}
       DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
-      COLLECTION_NAME: ${{ secrets.COLLECTION_NAME }}
       EMAIL_USER: ${{ secrets.EMAIL_USER }}
       EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
-      SECRET_PASS_KEY: ${{ secrets.SECRET_PASS_KEY }}
 
     steps:
       - name: Checkout repository
@@ -34,24 +89,23 @@ jobs:
         run: |
           node exportToCSV.js
 
-      - name: Check if CSV file exists
+      - name: Check if CSV files exist
         run: |
           ls -l
-          cat output.csv
+          cat jobapplications_output.csv
+          cat enquiryforms_output.csv
 
       - name: Send CSV to HR
         run: |
           echo "Sending CSV to HR..."
-          node sendEmail.js
+          node sendEmail.js jobapplications_output.csv enquiryforms_output.csv
 
-      - name: Commit and push the CSV file
+      - name: Commit and push the CSV files
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
 
-          # Check if there are any changes to commit
-          git diff --exit-code || (
-            git add output.csv
-            git commit -m "Auto-update CSV file"
-            git push
-          )
+          # Commit the CSV files if they have been modified
+          git add jobapplications_output.csv enquiryforms_output.csv
+          git commit -m "Auto-update MongoDB exported CSV files"
+          git push
