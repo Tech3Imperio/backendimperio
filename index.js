@@ -8,6 +8,7 @@ const Dbconnector = require("./DatabaseConnection/user");
 const logHistory = require("./Middleware/user");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
+s;
 const cors = require("cors");
 const path = require("path");
 const axios = require("axios");
@@ -106,19 +107,6 @@ app.options("/submit-form", (req, res) => {
   res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   res.sendStatus(200);
-});
-
-// Define a Mongoose Model (Modify as per your collection)
-const DataSchema = new mongoose.Schema({}, { strict: false }); // Flexible Schema
-const DataModel = mongoose.model("enquiryforms", DataSchema);
-
-app.get("/getData", async (req, res) => {
-  try {
-    const data = await DataModel.find({}, { _id: 0 }); // Exclude _id field
-    res.json(data);
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching data" });
-  }
 });
 
 app.use(errorhandeler);
