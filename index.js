@@ -8,7 +8,7 @@ const Dbconnector = require("./DatabaseConnection/user");
 const logHistory = require("./Middleware/user");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
-s;
+
 const cors = require("cors");
 const path = require("path");
 const axios = require("axios");
