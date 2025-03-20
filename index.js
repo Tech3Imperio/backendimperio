@@ -103,11 +103,13 @@ app.post("/submit-form", async (req, res) => {
 app.post("/landing-form", async (req, res) => {
   try {
     const response = await axios.post(
-      "https://script.google.com/macros/s/AKfycbwiKsIo3KXLRKqn3IsFLqecwR4me5A4WO33ay4alOvzqd0Vf6dakPJgBZL8JFenP9_wfw/exec",
+      "https://script.google.com/macros/s/AKfycbyD8bll0gVWbOxhycG1pvAEv8l8DUs8fpYE3DzWFLqChuOtoZO1S8zTwIXOv3EtKYd1uw/exec",
       req.body,
       { headers: { "Content-Type": "application/json" } }
     );
-
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
     res.json(response.data); // Send JSON response
   } catch (error) {
     console.error("Error submitting form:", error.message);
