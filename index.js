@@ -100,9 +100,30 @@ app.post("/submit-form", async (req, res) => {
     res.status(500).send("Error submitting form");
   }
 });
+app.post("/landing-form", async (req, res) => {
+  try {
+    const response = await axios.post(
+      "https://script.google.com/macros/s/AKfycbwiKsIo3KXLRKqn3IsFLqecwR4me5A4WO33ay4alOvzqd0Vf6dakPJgBZL8JFenP9_wfw/exec",
+      req.body,
+      { headers: { "Content-Type": "application/json" } }
+    );
+
+    res.json(response.data); // Send JSON response
+  } catch (error) {
+    console.error("Error submitting form:", error.message);
+    res.status(500).json({ error: "Error submitting form" });
+  }
+});
 
 // Handle preflight OPTIONS request
 app.options("/submit-form", (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.sendStatus(200);
+});
+
+app.options("/landing-form", (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
