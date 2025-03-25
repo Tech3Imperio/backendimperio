@@ -81,7 +81,7 @@ app.get("/test", (req, res) => {
 app.post("/submit-form", async (req, res) => {
   try {
     const response = await axios.post(
-      "https://script.google.com/macros/s/AKfycbyxkgQzpx1ha9MACPolsGrewDCBCtd-a8N8VsBiGAOicAzhWMEFAvJON-99ZE6RyahFEQ/exec",
+      "https://script.google.com/macros/s/AKfycbyASmCmu4sMGYq2LBicyIGPUYfSTQhX61nb9_pXc_VrqrFQEBnRlOeQ9yjkZnIyy7avvg/exec",
       req.body,
       {
         headers: {
