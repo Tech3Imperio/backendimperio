@@ -7,7 +7,7 @@ const uri = process.env.MONGODB_URI;
 const databaseName = process.env.DATABASE_NAME;
 
 // List of collections to export
-const collectionNames = ["jobapplications", "enquiryforms"]; // Add more collections here
+const collectionNames = ["jobapplications", "enquiryforms", "dealerdbs"]; // Add more collections here
 
 async function exportToCSV(collectionName) {
   const client = new MongoClient(uri, {
