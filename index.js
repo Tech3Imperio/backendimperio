@@ -17,7 +17,7 @@ const dbUri = process.env.MONGODB_URI;
 
 const app = express();
 const PORT = process.env.PORT || 3001; // Ensure your backend runs on port 3001
-
+const otpRoutes = require("./Routes/otpRoutes");
 // Database connection
 Dbconnector(dbUri, {
   useNewUrlParser: true,
@@ -131,6 +131,8 @@ app.options("/landing-form", (req, res) => {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   res.sendStatus(200);
 });
+
+app.use("/api", otpRoutes);
 
 app.use(errorhandeler);
 app.listen(PORT, () => {

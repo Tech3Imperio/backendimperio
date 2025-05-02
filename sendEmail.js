@@ -3,8 +3,8 @@ const path = require("path");
 const fs = require("fs");
 
 // Environment variables for email and SMTP credentials
-const emailUser = process.env.EMAIL_USER;
-const emailPass = process.env.EMAIL_PASS;
+const emailUser = process.env.EMAIL_USER_FORM;
+const emailPass = process.env.EMAIL_PASS_FORM;
 
 // List of recipient email addresses
 const recipientEmails = [
