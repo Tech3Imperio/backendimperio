@@ -1,6 +1,6 @@
 // Controller for OTP operations
-const otpService = require("../Services/otpService");
-const emailService = require("../Services/emailService");
+const otpService = require("../services/otpService");
+const emailService = require("../services/emailService");
 
 // In-memory store for OTPs (use a database in production)
 const otpStore = {};
