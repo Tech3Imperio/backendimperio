@@ -5,9 +5,9 @@ const { otpLimiter } = require("../Middleware/rateLimiter"); // Import rate limi
 const router = express.Router();
 
 // Route to send OTP
-router.post("/send-otp", otpLimiter, otpController.sendOTP);
+router.post("/send-otp", otpController.sendOTP);
 
 // Route to verify OTP
-router.post("/verify-otp", otpLimiter, otpController.verifyOTP);
+router.post("/verify-otp", otpController.verifyOTP);
 
 module.exports = router;

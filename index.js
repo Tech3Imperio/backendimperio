@@ -35,15 +35,25 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
+const allowedOrigins = [
+  "https://imperiorailing.com",
+  "https://www.imperiorailing.com",
+  "http://localhost:5173",
+];
+
 app.use(
   cors({
-    origin: [
-      "https://imperiorailing.com",
-      "https://www.imperiorailing.com",
-      "http://localhost:5173",
-    ],
-    methods: "GET,POST,PUT,DELETE",
-    allowedHeaders: "Content-Type",
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+    methods: "GET,POST,PUT,DELETE,OPTIONS",
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 // app.use(logHistory("log.txt"));
