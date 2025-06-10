@@ -52,7 +52,7 @@ app.use(
       }
     },
     credentials: true,
-    methods: "GET,POST,PUT,DELETE,OPTIONS",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
@@ -62,7 +62,7 @@ app.use("/", userRouter);
 app.use("/product", dealerRouter);
 app.use("/", enquiryRouter);
 app.use("/", jobapplicationRouter);
-
+app.options("*", cors(allowedOrigins));
 const GOOGLE_SHEET_WEB_APP_URL =
   "https://script.google.com/macros/s/AKfycbyxkgQzpx1ha9MACPolsGrewDCBCtd-a8N8VsBiGAOicAzhWMEFAvJON-99ZE6RyahFEQ/exec";
 
