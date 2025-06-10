@@ -127,6 +127,162 @@ app.post("/landing-form", async (req, res) => {
   }
 });
 
+// Send Phone OTP endpoint
+app.post("/api/send-phone-otp", async (req, res) => {
+  try {
+    const { phoneNumber } = req.body;
+
+    if (!phoneNumber) {
+      return res.status(400).json({
+        Status: "Error",
+        Details: "Phone number is required",
+      });
+    }
+
+    // Your 2factor API key - store this in environment variables
+    const apiKey = process.env.TWOFACTOR_API_KEY;
+
+    if (!apiKey) {
+      return res.status(500).json({
+        Status: "Error",
+        Details: "API key not configured",
+      });
+    }
+
+    // 2factor API endpoint for sending OTP
+    const url = `https://2factor.in/API/V1/${apiKey}/SMS/${phoneNumber}/AUTOGEN`;
+
+    const response = await fetch(url, {
+      method: "GET",
+    });
+
+    // Check if response is ok
+    if (!response.ok) {
+      return res.status(400).json({
+        Status: "Error",
+        Details: `HTTP error! status: ${response.status}`,
+      });
+    }
+
+    // Get response as text first
+    const responseText = await response.text();
+
+    if (!responseText || responseText.trim() === "") {
+      return res.status(400).json({
+        Status: "Error",
+        Details: "Empty response from server",
+      });
+    }
+
+    // Try to parse JSON
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error("JSON parse error:", parseError);
+      console.error("Response text:", responseText);
+      return res.status(400).json({
+        Status: "Error",
+        Details: "Invalid response format from server",
+      });
+    }
+
+    if (data.Status === "Success") {
+      return res.json({
+        Status: "Success",
+        Details: data.Details, // This is the session ID
+      });
+    } else {
+      return res.status(400).json({
+        Status: "Error",
+        Details: data.Details || "Failed to send OTP",
+      });
+    }
+  } catch (error) {
+    console.error("Error sending OTP:", error);
+    return res.status(500).json({
+      Status: "Error",
+      Details: "Internal server error",
+    });
+  }
+});
+
+// Verify Phone OTP endpoint
+app.post("/api/verify-phone-otp", async (req, res) => {
+  try {
+    const { sessionId, otp } = req.body;
+
+    if (!sessionId || !otp) {
+      return res.status(400).json({
+        Status: "Error",
+        Details: "Session ID and OTP are required",
+      });
+    }
+
+    const apiKey = process.env.TWOFACTOR_API_KEY;
+
+    if (!apiKey) {
+      return res.status(500).json({
+        Status: "Error",
+        Details: "API key not configured",
+      });
+    }
+
+    // 2factor API endpoint for verifying OTP
+    const url = `https://2factor.in/API/V1/${apiKey}/SMS/VERIFY/${sessionId}/${otp}`;
+
+    const response = await fetch(url, {
+      method: "GET",
+    });
+
+    if (!response.ok) {
+      return res.status(400).json({
+        Status: "Error",
+        Details: `HTTP error! status: ${response.status}`,
+      });
+    }
+
+    const responseText = await response.text();
+
+    if (!responseText || responseText.trim() === "") {
+      return res.status(400).json({
+        Status: "Error",
+        Details: "Empty response from server",
+      });
+    }
+
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error("JSON parse error:", parseError);
+      console.error("Response text:", responseText);
+      return res.status(400).json({
+        Status: "Error",
+        Details: "Invalid response format from server",
+      });
+    }
+
+    if (data.Status === "Success") {
+      return res.json({
+        Status: "Success",
+        Details: data.Details,
+      });
+    } else {
+      return res.status(400).json({
+        Status: "Error",
+        Details: data.Details || "Invalid OTP",
+      });
+    }
+  } catch (error) {
+    console.error("Error verifying OTP:", error);
+    return res.status(500).json({
+      Status: "Error",
+      Details: "Internal server error",
+    });
+  }
+});
+
 // Handle preflight OPTIONS request
 app.options("/submit-form", (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -143,6 +299,66 @@ app.options("/landing-form", (req, res) => {
 });
 
 app.use("/api", otpRoutes);
+
+// Add new endpoint to fetch quotation data with images
+app.get("/get-quotation", async (req, res) => {
+  try {
+    const { orderId } = req.query;
+
+    // Fetch quotation data from Google Sheet
+    const response = await axios.get(
+      "https://script.google.com/macros/s/AKfycbyGliJ9kC9zhN4ShItCtCatIe-GCB98yVo0z9uVa8k0ToaPfKM7LupxuiBiDkgZJ2Ug/exec",
+      {
+        params: {
+          sheet: "Quotations",
+          orderId: orderId,
+        },
+      }
+    );
+
+    // Fetch product images from Google Sheet
+    const imagesResponse = await axios.get(
+      "https://script.google.com/macros/s/AKfycbyGliJ9kC9zhN4ShItCtCatIe-GCB98yVo0z9uVa8k0ToaPfKM7LupxuiBiDkgZJ2Ug/exec",
+      {
+        params: {
+          sheet: "ProductImages",
+        },
+      }
+    );
+
+    // Combine quotation data with images
+    const quotationData = response.data;
+    const productImages = imagesResponse.data;
+
+    // Find matching images for the products
+    const baseImage = productImages.find(
+      (img) => img.product === quotationData.base && img.type === "base"
+    )?.imageUrl;
+
+    const handrailImage = productImages.find(
+      (img) => img.product === quotationData.handrail && img.type === "handrail"
+    )?.imageUrl;
+
+    const combinationImage = productImages.find(
+      (img) =>
+        img.base === quotationData.base &&
+        img.handrail === quotationData.handrail
+    )?.imageUrl;
+
+    // Add images to quotation data
+    const finalQuotationData = {
+      ...quotationData,
+      baseImage,
+      handrailImage,
+      combinationImage,
+    };
+
+    res.json(finalQuotationData);
+  } catch (error) {
+    console.error("Error fetching quotation:", error);
+    res.status(500).json({ error: "Failed to fetch quotation data" });
+  }
+});
 
 app.use(errorhandeler);
 app.listen(PORT, () => {
