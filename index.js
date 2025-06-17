@@ -139,24 +139,39 @@ app.post("/api/send-phone-otp", async (req, res) => {
       });
     }
 
-    // Your 2factor API key - store this in environment variables
-    const apiKey = process.env.TWOFACTOR_API_KEY;
+    // Message Central API credentials - store these in environment variables
+    const authToken = process.env.MESSAGE_CENTRAL_AUTH_TOKEN;
+    const customerId = process.env.MESSAGE_CENTRAL_CUSTOMER_ID;
 
-    if (!apiKey) {
+    if (!authToken || !customerId) {
       return res.status(500).json({
         Status: "Error",
-        Details: "API key not configured",
+        Details: "Message Central API credentials not configured",
       });
     }
 
-    // 2factor API endpoint for sending OTP
-    const url = `https://2factor.in/API/V1/${apiKey}/SMS/${phoneNumber}/AUTOGEN`;
+    // Extract country code and mobile number
+    // Assuming phoneNumber comes as full number like "918976964817"
+    let countryCode = "91"; // Default to India
+    let mobileNumber = phoneNumber;
+
+    // If phone number starts with country code, extract it
+    if (phoneNumber.length > 10) {
+      countryCode = phoneNumber.substring(0, phoneNumber.length - 10);
+      mobileNumber = phoneNumber.substring(phoneNumber.length - 10);
+    }
+
+    // Message Central API endpoint for sending OTP
+    const url = `https://cpaas.messagecentral.com/verification/v3/send?countryCode=${countryCode}&customerId=${customerId}&flowType=WHATSAPP&mobileNumber=${mobileNumber}`;
 
     const response = await fetch(url, {
-      method: "GET",
+      method: "POST",
+      headers: {
+        authToken: authToken,
+        "Content-Type": "application/json",
+      },
     });
 
-    // Check if response is ok
     if (!response.ok) {
       return res.status(400).json({
         Status: "Error",
@@ -164,38 +179,17 @@ app.post("/api/send-phone-otp", async (req, res) => {
       });
     }
 
-    // Get response as text first
-    const responseText = await response.text();
+    const data = await response.json();
 
-    if (!responseText || responseText.trim() === "") {
-      return res.status(400).json({
-        Status: "Error",
-        Details: "Empty response from server",
-      });
-    }
-
-    // Try to parse JSON
-    let data;
-    try {
-      data = JSON.parse(responseText);
-    } catch (parseError) {
-      console.error("JSON parse error:", parseError);
-      console.error("Response text:", responseText);
-      return res.status(400).json({
-        Status: "Error",
-        Details: "Invalid response format from server",
-      });
-    }
-
-    if (data.Status === "Success") {
+    if (data.responseCode === 200 && data.message === "SUCCESS") {
       return res.json({
         Status: "Success",
-        Details: data.Details, // This is the session ID
+        Details: data.data.verificationId, // Using verificationId as session ID equivalent
       });
     } else {
       return res.status(400).json({
         Status: "Error",
-        Details: data.Details || "Failed to send OTP",
+        Details: data.message || "Failed to send OTP",
       });
     }
   } catch (error) {
@@ -207,78 +201,97 @@ app.post("/api/send-phone-otp", async (req, res) => {
   }
 });
 
-// Verify Phone OTP endpoint
+// Replace the existing /api/verify-phone-otp endpoint with this corrected version:
 app.post("/api/verify-phone-otp", async (req, res) => {
   try {
-    const { sessionId, otp } = req.body;
+    const { sessionId, otp } = req.body; // sessionId is actually verificationId from Message Central
+
+    console.log("Received verification request:", { sessionId, otp }); // Debug log
 
     if (!sessionId || !otp) {
       return res.status(400).json({
         Status: "Error",
-        Details: "Session ID and OTP are required",
+        Details: "Verification ID and OTP are required",
       });
     }
 
-    const apiKey = process.env.TWOFACTOR_API_KEY;
+    const authToken = process.env.MESSAGE_CENTRAL_AUTH_TOKEN;
+    const customerId = process.env.MESSAGE_CENTRAL_CUSTOMER_ID;
 
-    if (!apiKey) {
+    console.log("Environment check:", {
+      hasAuthToken: !!authToken,
+      hasCustomerId: !!customerId,
+    }); // Debug log
+
+    if (!authToken || !customerId) {
       return res.status(500).json({
         Status: "Error",
-        Details: "API key not configured",
+        Details: "Message Central API credentials not configured",
       });
     }
 
-    // 2factor API endpoint for verifying OTP
-    const url = `https://2factor.in/API/V1/${apiKey}/SMS/VERIFY/${sessionId}/${otp}`;
+    // Message Central API endpoint for validating OTP
+    const url = `https://cpaas.messagecentral.com/verification/v3/validateOtp?countryCode=91&customerId=${customerId}&verificationId=${sessionId}&code=${otp}`;
+
+    console.log("Making request to:", url); // Debug log (remove in production)
 
     const response = await fetch(url, {
       method: "GET",
+      headers: {
+        authToken: authToken,
+        "Content-Type": "application/json",
+      },
     });
 
+    console.log("Response status:", response.status); // Debug log
+
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error("API Error Response:", errorText); // Debug log
       return res.status(400).json({
         Status: "Error",
-        Details: `HTTP error! status: ${response.status}`,
+        Details: `API error: ${response.status} - ${errorText}`,
       });
     }
 
-    const responseText = await response.text();
-
-    if (!responseText || responseText.trim() === "") {
-      return res.status(400).json({
-        Status: "Error",
-        Details: "Empty response from server",
-      });
-    }
-
-    let data;
-    try {
-      data = JSON.parse(responseText);
-    } catch (parseError) {
-      console.error("JSON parse error:", parseError);
-      console.error("Response text:", responseText);
-      return res.status(400).json({
-        Status: "Error",
-        Details: "Invalid response format from server",
-      });
-    }
-
-    if (data.Status === "Success") {
-      return res.json({
+    const data = await response.json();
+    console.log("API Response:", data); // Debug log
+    console.log("typeof responseCode:", typeof data.responseCode);
+    console.log(
+      "typeof verificationStatus:",
+      typeof data.data?.verificationStatus
+    );
+    // FIXED: Check the correct response format from backend
+    if (
+      data.responseCode === 200 &&
+      data.message === "SUCCESS" &&
+      data.data &&
+      data.data.verificationStatus === "VERIFICATION_COMPLETED"
+    ) {
+      console.log("Verification successful!");
+      return res.status(200).json({
         Status: "Success",
-        Details: data.Details,
+        Details: "OTP verified successfully",
+      });
+    } else if (
+      data.responseCode === 705 ||
+      data.message === "VERIFICATION_EXPIRED"
+    ) {
+      return res.status(400).json({
+        Status: "Error",
+        Details: "OTP has expired. Please request a new one.",
       });
     } else {
       return res.status(400).json({
         Status: "Error",
-        Details: data.Details || "Invalid OTP",
+        Details: data.message || data.data?.errorMessage || "Invalid OTP",
       });
     }
   } catch (error) {
     console.error("Error verifying OTP:", error);
     return res.status(500).json({
       Status: "Error",
-      Details: "Internal server error",
+      Details: "Internal server error: " + error.message,
     });
   }
 });
