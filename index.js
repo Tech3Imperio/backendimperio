@@ -127,6 +127,23 @@ app.post("/landing-form", async (req, res) => {
   }
 });
 
+app.post("/contest-form", async (req, res) => {
+  try {
+    const response = await axios.post(
+      "https://script.google.com/macros/s/AKfycbyycbtgXfnmpGPLbBQomTqaVRX3RwbF6zObTg8VKZmZSqJES0uRhZpsw_E3fV0_aOTosw/exec",
+      req.body,
+      { headers: { "Content-Type": "application/json" } }
+    );
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.json(response.data);
+  } catch (error) {
+    console.error("Error submitting form:", error.message);
+    res.status(500).json({ error: "Error submitting form" });
+  }
+});
+
 // Send Phone OTP endpoint
 app.post("/api/send-phone-otp", async (req, res) => {
   try {
