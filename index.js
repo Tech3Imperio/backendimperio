@@ -130,7 +130,7 @@ app.post("/landing-form", async (req, res) => {
 app.post("/contest-form", async (req, res) => {
   try {
     const response = await axios.post(
-      "https://script.google.com/macros/s/AKfycbzynRv3vJQLYWyWkU6WspgQIj77ajoYWS77q4WHf1QvOhhzkWN0yRFY6F-14Dyjk71e-Q/exec",
+      "https://script.google.com/macros/s/AKfycbwudDVMBI19eukJGw2Myhzl1D-tFV8fMfqX-e-K1yvVRSJrLuNlPrpksyxaHxdJ4Czo/exec",
       req.body,
       { headers: { "Content-Type": "application/json" } }
     );
