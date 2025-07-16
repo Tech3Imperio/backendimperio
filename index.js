@@ -87,11 +87,11 @@ app.post("/submit", async (req, res) => {
 app.get("/test", (req, res) => {
   res.send("Test route is working");
 });
-
+// "https://script.google.com/macros/s/AKfycbw_qHdwPSyvj-RyG9QNQRDAQRFiyyjhXFSDsZpYksjPBas7Mmy7PxBwZ5-uaX3VDvh6/exec"
 app.post("/submit-form", async (req, res) => {
   try {
     const response = await axios.post(
-      "https://script.google.com/macros/s/AKfycbw_qHdwPSyvj-RyG9QNQRDAQRFiyyjhXFSDsZpYksjPBas7Mmy7PxBwZ5-uaX3VDvh6/exec",
+      "https://script.google.com/macros/s/AKfycbxLZrNzpkoWzJ6vJZgXUMEvq_XZiV36WlogRIxQfxJ4tX_PsxteL0Y7AyLMcC55GT5M/exec",
       req.body,
       {
         headers: {
